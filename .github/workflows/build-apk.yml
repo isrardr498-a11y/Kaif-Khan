@@ -23,6 +23,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Setup JDK 21
         uses: actions/setup-java@v4
@@ -30,12 +31,10 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Accept Android SDK Licenses Directly
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+      - name: Accept Android Licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Build Web Bundle & Sync Android Platform
-        if: hashFiles('package.json') != ''
+      - name: Install Dependencies, Build Web Bundle & Sync Capacitor Android
         run: |
           npm install --legacy-peer-deps
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest --save-dev --legacy-peer-deps
@@ -52,7 +51,44 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Assemble Debug APK
-        id: build_apk
+      - name: Assemble Debug APK with Gradle
+        working-directory: ./android
         run: |
-          if [ -f "./gradlew" ]; then
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Prepare Release Assets
+        run: |
+          mkdir -p release-assets
+          cp android/app/build/outputs/apk/debug/app-debug.apk release-assets/app-debug.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk "release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk"
+
+      - name: Upload Debug APK Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trade-Flow-Pro-debug-apk-${{ github.run_number }}
+          path: |
+            release-assets/app-debug.apk
+            release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish Debug APK to GitHub Releases
+        if: success()
+        continue-on-error: true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: debug-build-${{ github.run_number }}
+          name: "Trade Flow Pro — Debug APK (Build #${{ github.run_number }})"
+          body: |
+            Automated Debug APK build for **Trade Flow Pro** from commit `${{ github.sha }}`.
+            - **Installable APK**: `Trade-Flow-Pro-debug-b${{ github.run_number }}.apk` (or `app-debug.apk`)
+          draft: false
+          prerelease: false
+          make_latest: "true"
+          files: |
+            release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk
+            release-assets/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
