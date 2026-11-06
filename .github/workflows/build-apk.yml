@@ -1,0 +1,80 @@
+name: Build Android APK (Trade Flow Pro)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build & Package Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. Setup Java JDK 21 (Required for Android Gradle & Capacitor)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: 4. Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 5. Install Web Dependencies & Capacitor Android Tooling
+        run: |
+          npm install --legacy-peer-deps
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest --save-dev --legacy-peer-deps
+
+      - name: 6. Build Production Web Assets (dist/)
+        run: |
+          npm run build
+          # Ensure standalone index.html and manifest are present in dist/
+          if [ ! -f "dist/index.html" ]; then
+            mkdir -p dist
+            cp index.html dist/index.html
+          fi
+          if [ -f "public/manifest.json" ]; then
+            cp public/manifest.json dist/manifest.json
+          fi
+
+      - name: 7. Initialize & Sync Capacitor Android Platform
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+
+      - name: 8. Configure Gradle Memory & Assemble Debug APK
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: 9. Rename APK for Easy Download
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk Trade-Flow-Pro.apk
+
+      - name: 10. Upload Installable Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trade-Flow-Pro-Android-APK
+          path: |
+            Trade-Flow-Pro.apk
+            android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30

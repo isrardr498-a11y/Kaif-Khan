@@ -1,0 +1,24 @@
+{
+  "name": "Trade Flow Pro — Live Trading & Quant Academy",
+  "short_name": "Trade Flow Pro",
+  "description": "Interactive Indian Market Trading Simulator, Candlestick Pattern Guide, Algo-Coding Lab & 8-Chapter Trading Bible.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0E14",
+  "theme_color": "#0B0E14",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%230B0E14'/%3E%3Cpath d='M40 132 L76 92 L104 114 L152 54' stroke='%2300E676' stroke-width='14' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='152' cy='54' r='10' fill='%2300E676'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230B0E14'/%3E%3Cpath d='M104 352 L202 245 L278 304 L408 144' stroke='%2300E676' stroke-width='36' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='408' cy='144' r='26' fill='%2300E676'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

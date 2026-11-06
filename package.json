@@ -1,14 +1,17 @@
 {
-  "name": "react-example",
+  "name": "trade-flow-pro",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "tsx --test src/lib/tradingMath.test.ts",
+    "apk:init": "vite build && npx cap add android && npx cap sync android",
+    "apk:sync": "vite build && npx cap sync android"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
