@@ -121,26 +121,8 @@
         </div>
       </div>
 
-      <!-- Zone 3: Primary Contextual Action + 1-Tap Standalone APK HTML Export & Copy -->
+      <!-- Zone 3: Primary Contextual Action -->
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <button
-          id="top-copy-code-btn"
-          type="button"
-          onclick="copyStandaloneApkHtml()"
-          title="Copy complete standalone index.html code to clipboard for GitHub Pages / APK"
-          class="px-2.5 py-1.5 min-h-[36px] text-xs font-semibold bg-surface hover:bg-surfaceElevated text-ink border border-borderSubtle rounded-lg transition-colors whitespace-nowrap shrink-0 font-mono"
-        >
-          📋 Copy HTML
-        </button>
-        <button
-          id="top-download-apk-btn"
-          type="button"
-          onclick="downloadStandaloneApkHtml()"
-          title="Download 100% self-contained single index.html for GitHub Pages & Android APK"
-          class="px-2.5 py-1.5 min-h-[36px] text-xs font-semibold bg-bullMuted hover:bg-bull hover:text-canvas text-bull border border-bull/40 rounded-lg transition-colors whitespace-nowrap shrink-0 font-mono"
-        >
-          ⬇ APK HTML
-        </button>
         <button
           id="top-positions-btn"
           type="button"
@@ -4719,57 +4701,8 @@ Rule 4 (Never Average Loss): Girte hue losing trade (khaskar Option Buying) mein
       }
 
       /*************************************************************************
-       * 13. STANDALONE APK HTML EXPORTER & IMMEDIATE ZERO-LATENCY BOOTSTRAP
+       * 13. IMMEDIATE ZERO-LATENCY BOOTSTRAP
        *************************************************************************/
-      async function getCleanStandaloneHtmlSource() {
-        try {
-          const resp = await fetch('/index.html', { cache: 'no-store' });
-          if (resp.ok) {
-            const rawText = await resp.text();
-            return rawText.replace(/<script type="module" src="\/@vite\/client"><\/script>\s*/g, '');
-          }
-        } catch (_) {}
-        return '<!doctype html>\n' + document.documentElement.outerHTML;
-      }
-
-      async function copyStandaloneApkHtml() {
-        try {
-          const htmlContent = await getCleanStandaloneHtmlSource();
-          await navigator.clipboard.writeText(htmlContent);
-          showToast(
-            'Full index.html Copied!',
-            'Complete Trade Flow Pro single-file HTML code copied to clipboard — ready for GitHub Pages & APK!',
-            'bull'
-          );
-        } catch (err) {
-          showToast('Copy Notice', 'Use the "⬇ APK HTML" button to download index.html directly.', 'info');
-        }
-      }
-
-      async function downloadStandaloneApkHtml() {
-        try {
-          const htmlContent = await getCleanStandaloneHtmlSource();
-          const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'index.html';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }, 300);
-          showToast(
-            'Trade Flow Pro index.html Downloaded',
-            '100% self-contained GitHub Pages & APK single-file index.html downloaded!',
-            'bull'
-          );
-        } catch (err) {
-          showToast('Download Error', 'Could not export standalone HTML file.', 'bear');
-        }
-      }
-
       let appBootstrapped = false;
       function bootstrapKitePulseApp() {
         if (appBootstrapped) return;
