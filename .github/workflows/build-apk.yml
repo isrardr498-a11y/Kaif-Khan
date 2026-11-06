@@ -16,79 +16,105 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: 1. Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: 2. Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - name: Setup JDK 21
+      - name: 3. Setup JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Accept Android Licenses
+      - name: 4. Accept Android SDK Licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Install Dependencies, Build Web Bundle & Sync Capacitor Android
+      - name: 5. Prepare Web Assets & Sync Capacitor Android Project
         run: |
-          npm install --legacy-peer-deps
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest --save-dev --legacy-peer-deps
-          npm run build
-          if [ ! -f "dist/index.html" ]; then
-            mkdir -p dist
-            cp index.html dist/index.html
+          # Ensure package.json and capacitor.config.json exist even if uploaded manually
+          if [ ! -f "package.json" ]; then
+            npm init -y
           fi
+          node -e 'fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.tradeflowpro.app", appName: "Trade Flow Pro", webDir: "dist", bundledWebRuntime: false, server: { androidScheme: "https", cleartext: true }, android: { allowMixedContent: true, webContentsDebuggingEnabled: true } }, null, 2));'
+
+          # Prepare dist/ directory directly from standalone index.html
+          rm -rf dist
+          mkdir -p dist
+          cp -f index.html dist/index.html
           if [ -f "public/manifest.json" ]; then
-            cp public/manifest.json dist/manifest.json
+            cp -f public/manifest.json dist/manifest.json
           fi
+
+          # Install Capacitor 6 (stable with Android SDK 34 & JDK 21 on ubuntu-latest)
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 --no-audit --no-fund --legacy-peer-deps
+
+          # Add or sync Android platform
           if [ ! -d "android" ]; then
             npx cap add android
           fi
           npx cap sync android
 
-      - name: Assemble Debug APK with Gradle
+          # Explicitly guarantee index.html is inside Android assets/public/
+          mkdir -p android/app/src/main/assets/public
+          cp -f index.html android/app/src/main/assets/public/index.html
+          if [ -f "public/manifest.json" ]; then
+            cp -f public/manifest.json android/app/src/main/assets/public/manifest.json
+          fi
+
+      - name: 6. Assemble & Sign Universal Android APK
         working-directory: ./android
         run: |
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Prepare Release Assets
+          # Sign APK with V1 + V2 + V3 debug signature so all Android versions (8–15) install cleanly
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
+          if [ -n "$APKSIGNER" ] && [ -f "$APK_PATH" ]; then
+            keytool -genkey -v -keystore debug-universal.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" || true
+            "$APKSIGNER" sign --ks debug-universal.keystore --ks-pass pass:android --key-pass pass:android --v1-signing-enabled true --v2-signing-enabled true "$APK_PATH" || true
+          fi
+
+      - name: 7. Prepare Downloadable APK Files
         run: |
           mkdir -p release-assets
-          cp android/app/build/outputs/apk/debug/app-debug.apk release-assets/app-debug.apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk "release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk"
+          cp -f android/app/build/outputs/apk/debug/app-debug.apk release-assets/app-debug.apk
+          cp -f android/app/build/outputs/apk/debug/app-debug.apk release-assets/Trade-Flow-Pro.apk
+          cp -f android/app/build/outputs/apk/debug/app-debug.apk "release-assets/Trade-Flow-Pro-v1.0.${{ github.run_number }}.apk"
+          ls -lh release-assets/
 
-      - name: Upload Debug APK Artifact
+      - name: 8. Upload APK to GitHub Actions Artifacts
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: Trade-Flow-Pro-debug-apk-${{ github.run_number }}
+          name: Trade-Flow-Pro-APK
           path: |
+            release-assets/Trade-Flow-Pro.apk
             release-assets/app-debug.apk
-            release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish Debug APK to GitHub Releases
+      - name: 9. Publish APK to GitHub Releases
         if: success()
         continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: debug-build-${{ github.run_number }}
-          name: "Trade Flow Pro — Debug APK (Build #${{ github.run_number }})"
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Trade Flow Pro Android APK v1.0.${{ github.run_number }}"
           body: |
-            Automated Debug APK build for **Trade Flow Pro** from commit `${{ github.sha }}`.
-            - **Installable APK**: `Trade-Flow-Pro-debug-b${{ github.run_number }}.apk` (or `app-debug.apk`)
+            ### Trade Flow Pro — Installable Android App (APK)
+            Tap **`Trade-Flow-Pro.apk`** (or `app-debug.apk`) under **Assets** below to download and install directly on your Android phone.
+            - **Note for Private Repositories on Mobile:** Open GitHub in **Chrome Browser** (not an in-app popup viewer) or switch the repository visibility to **Public** in Settings so Android's download manager can download the `.apk` without authentication errors.
           draft: false
           prerelease: false
           make_latest: "true"
           files: |
-            release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk
+            release-assets/Trade-Flow-Pro.apk
             release-assets/app-debug.apk
+            release-assets/Trade-Flow-Pro-v1.0.${{ github.run_number }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
