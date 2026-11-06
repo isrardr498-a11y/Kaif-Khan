@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - master
   workflow_dispatch:
 
 permissions:
@@ -29,10 +30,9 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-         accept-license: true
+      - name: Accept Android SDK Licenses Directly
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build Web Bundle & Sync Android Platform
         if: hashFiles('package.json') != ''
@@ -56,46 +56,3 @@ jobs:
         id: build_apk
         run: |
           if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew assembleDebug --no-daemon --stacktrace
-            APK_SOURCE=$(find . -path "*/outputs/apk/debug/*.apk" | head -n 1)
-          else
-            chmod +x android/gradlew
-            cd android
-            ./gradlew assembleDebug --no-daemon --stacktrace
-            cd ..
-            APK_SOURCE="android/app/build/outputs/apk/debug/app-debug.apk"
-          fi
-          mkdir -p release-assets
-          cp "$APK_SOURCE" "release-assets/app-debug.apk"
-          cp "$APK_SOURCE" "release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk"
-
-      - name: Upload Debug APK Artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Trade-Flow-Pro-debug-apk-${{ github.run_number }}
-          path: |
-            release-assets/app-debug.apk
-            release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Publish Debug APK to GitHub Releases
-        if: success()
-        continue-on-error: true
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: debug-build-${{ github.run_number }}
-          name: "Trade Flow Pro — Debug APK (Build #${{ github.run_number }})"
-          body: |
-            Automated Debug APK build for **Trade Flow Pro** from commit `${{ github.sha }}`.
-            - **Installable APK**: `Trade-Flow-Pro-debug-b${{ github.run_number }}.apk` (or `app-debug.apk`)
-          draft: false
-          prerelease: false
-          make_latest: "true"
-          files: |
-            release-assets/Trade-Flow-Pro-debug-b${{ github.run_number }}.apk
-            release-assets/app-debug.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
