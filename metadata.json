@@ -1,0 +1,6 @@
+{
+  "name": "KitePulse Pro — Mobile Trading Simulator & Quant Academy",
+  "description": "Institutional dark-mode mobile trading terminal, live GBM orderbook simulator, candlestick & algo-coding lab, 6-chapter quant handbook, and 15-question trader certification exam.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

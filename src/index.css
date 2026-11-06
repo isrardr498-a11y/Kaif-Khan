@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #0b0e14;
+  --color-surface: #151924;
+  --color-surfaceElevated: #1c2230;
+  --color-borderSubtle: #232a3b;
+  --color-bull: #00c087;
+  --color-bullMuted: rgba(0, 192, 135, 0.14);
+  --color-bear: #ff3b69;
+  --color-bearMuted: rgba(255, 59, 105, 0.14);
+  --color-ink: #e2e8f0;
+  --color-inkMuted: #94a3b8;
+  --color-inkDim: #64748b;
+  --color-accentBlue: #3b82f6;
+
+  --font-display: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
